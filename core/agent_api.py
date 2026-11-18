@@ -1,5 +1,5 @@
-"""The tool surface for agents: one list of typed functions, exposed both as CLI sub-commands (dragonslide_cli.py)
-and as MCP tools (dragonslide_mcp.py). Every function returns a JSON-serialisable dict and raises ProjectError on a
+"""The tool surface for agents: one list of typed functions, exposed both as CLI sub-commands (dragonslicer_cli.py)
+and as MCP tools (dragonslicer_mcp.py). Every function returns a JSON-serialisable dict and raises ProjectError on a
 problem the caller can fix. Parameters named `confirm` guard everything that moves the printer."""
 import sys
 
@@ -9,7 +9,7 @@ from . import project as pj
 from .goo_check import check as _goo_check
 from .project import ProjectError  # noqa: F401  (re-exported)
 
-DEFAULT_PROJECT = "dragonslide_project"
+DEFAULT_PROJECT = "dragonslicer_project"
 
 
 def _progress(i, n):

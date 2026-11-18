@@ -32,10 +32,10 @@ def _run_console():
     mode = sys.argv.pop(1)
     _console_streams()
     if mode == "mcp":
-        import dragonslide_mcp
-        dragonslide_mcp.server.run("stdio")
+        import dragonslicer_mcp
+        dragonslicer_mcp.server.run("stdio")
     else:
-        from dragonslide_cli import main as cli
+        from dragonslicer_cli import main as cli
         sys.exit(cli())
 
 
@@ -64,7 +64,7 @@ def main():
     app = QApplication(sys.argv)
     dark(app)
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-    icon = os.path.join(base, "assets", "dragonslide.png")
+    icon = os.path.join(base, "assets", "dragonslicer.png")
     if os.path.exists(icon):
         app.setWindowIcon(QIcon(icon))
     w = MainWindow()

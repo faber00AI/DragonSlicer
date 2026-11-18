@@ -1,15 +1,15 @@
 """Command line for the DragonSlicer pipeline (every command prints one JSON document; progress goes to stderr).
 
-    python dragonslide_cli.py new_project --project job1 --machine "Saturn 4 Ultra"
-    python dragonslide_cli.py add_model C:\\models\\figure.stl --project job1
-    python dragonslide_cli.py set_object 0 --project job1 --size_z 60
-    python dragonslide_cli.py arrange --project job1
-    python dragonslide_cli.py set_supports --project job1 --preset Tree_Medium
-    python dragonslide_cli.py check_project --project job1
-    python dragonslide_cli.py send_project 192.168.1.49 --project job1 --name figure.goo
-    python dragonslide_cli.py printer_start 192.168.1.49 figure.goo --confirm     # only after the user agrees
+    python dragonslicer_cli.py new_project --project job1 --machine "Saturn 4 Ultra"
+    python dragonslicer_cli.py add_model C:\\models\\figure.stl --project job1
+    python dragonslicer_cli.py set_object 0 --project job1 --size_z 60
+    python dragonslicer_cli.py arrange --project job1
+    python dragonslicer_cli.py set_supports --project job1 --preset Tree_Medium
+    python dragonslicer_cli.py check_project --project job1
+    python dragonslicer_cli.py send_project 192.168.1.49 --project job1 --name figure.goo
+    python dragonslicer_cli.py printer_start 192.168.1.49 figure.goo --confirm     # only after the user agrees
 
-`python dragonslide_cli.py --help` lists every command; `<command> --help` its options.
+`python dragonslicer_cli.py --help` lists every command; `<command> --help` its options.
 """
 import argparse
 import inspect

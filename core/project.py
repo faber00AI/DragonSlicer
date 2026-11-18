@@ -433,7 +433,7 @@ def write_dsl(out, p: dict, meshes: dict) -> Path:
         out = out.with_suffix(DSL_EXT)
     out.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("dsl.json", json.dumps(dict(format="dragonslide-project", version=DSL_VERSION if p.get("extra_plates") else 1)))
+        z.writestr("dsl.json", json.dumps(dict(format="dragonslicer-project", version=DSL_VERSION if p.get("extra_plates") else 1)))
         z.writestr("project.json", json.dumps(p, indent=2, ensure_ascii=False))
         for rel, data in meshes.items():
             z.writestr(rel, data)
@@ -451,7 +451,7 @@ def read_dsl(src) -> tuple[dict, dict]:
         p = json.loads(z.read("project.json"))
     except (zipfile.BadZipFile, KeyError, ValueError):
         raise ProjectError(f"{src.name} is not a valid .dsl file")
-    if meta.get("format") != "dragonslide-project" or meta.get("version", 0) > DSL_VERSION:
+    if meta.get("format") not in ("dragonslicer-project", "dragonslide-project") or meta.get("version", 0) > DSL_VERSION:  # old name: files saved before the rename
         raise ProjectError(f"{src.name}: unsupported .dsl format {meta}")
     meshes = {}
     for m in mesh_files(p):                                  # supports["mesh"]: supports saved by the UI

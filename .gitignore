@@ -7,9 +7,9 @@ __pycache__/
 *.pyc
 .venv/
 # dati utente / locali
-dragonslide.ini
-dragonslide_impostazioni.json
-dragonslide_project/
+dragonslicer.ini
+dragonslicer_impostazioni.json
+dragonslicer_project/
 presets/resins_user.json
 *.dsl
 *.goo

@@ -114,10 +114,10 @@ valida un `.goo` (struttura, checksum, copertura pixel di ogni layer, piè di pa
 Stessa pipeline dell'interfaccia (importa → ripara → dimensioni/rotazione → disponi → supporti → `.goo` → stampante), senza UI,
 su una cartella di progetto (`project.json` + `meshes/*.ply`). Un solo elenco di funzioni (`core/agent_api.py`) alimenta entrambi:
 
-- **CLI**: `python dragonslide_cli.py --help` (ogni comando stampa un JSON; l'avanzamento va su stderr). Esempio:
+- **CLI**: `python dragonslicer_cli.py --help` (ogni comando stampa un JSON; l'avanzamento va su stderr). Esempio:
   `new_project --project job1` → `add_model modello.stl --project job1` → `set_object 0 --project job1 --size_z 60` →
   `arrange` → `set_supports --preset Tree_Medium` → `check_project` → `send_project 192.168.1.49 --project job1 --name pezzo.goo`.
-- **MCP** (stdio): `claude mcp add dragonslide -- python C:\percorso\dragonslide_mcp.py`. 28 strumenti, errori restituiti come `{"error": ...}`.
+- **MCP** (stdio): `claude mcp add dragonslicer -- python C:\percorso\dragonslicer_mcp.py`. 28 strumenti, errori restituiti come `{"error": ...}`.
 - **Sicurezza**: avvio, pausa, ripresa, stop e cancellazione file sulla stampante rifiutano senza `confirm=true`; l'agente deve prima chiedere
   all'utente. `send_project` / `printer_upload` non avviano mai la stampa e rifiutano una stampante di modello diverso dal progetto.
   `printer_start` rifiuta anche se la stampante è occupata o il file non c'è.
@@ -126,14 +126,14 @@ su una cartella di progetto (`project.json` + `meshes/*.ply`). Un solo elenco di
 ## Versione portatile (.exe)
 `build_exe.ps1` (serve `pip install pyinstaller`) crea in `dist\`:
 - `DragonSlicer.exe` — l'interfaccia grafica, un solo file (~330 MB, il primo avvio impiega qualche secondo a decomprimersi)
-- `DragonSlicer.exe` (stesso file della GUI) — `DragonSlicer.exe cli <strumento> ...` (stessi comandi di `dragonslide_cli.py`) e `DragonSlicer.exe mcp` (server MCP su stdio)
+- `DragonSlicer.exe` (stesso file della GUI) — `DragonSlicer.exe cli <strumento> ...` (stessi comandi di `dragonslicer_cli.py`) e `DragonSlicer.exe mcp` (server MCP su stdio)
 
 Macchine e preset sono dentro l'exe; i dati che cambiano stanno accanto all'exe: `library\` (copiata al primo avvio), `presets\resins_user.json`,
-`dragonslide.ini` (impostazioni, anche i supporti salvati) e la cartella di progetto predefinita `dragonslide_project`. Basta copiare la cartella per spostare tutto.
+`dragonslicer.ini` (impostazioni, anche i supporti salvati) e la cartella di progetto predefinita `dragonslicer_project`. Basta copiare la cartella per spostare tutto.
 
 ## Aggiornamenti automatici
 Il menu **Aiuto → Cerca aggiornamenti** (e un controllo all'avvio) legge l'ultima *Release* di GitHub (`faber00AI/DragonSlicer`).
 Se la versione è più recente propone il download di `DragonSlicer.exe`, chiude l'app, sostituisce l'exe e la riavvia.
-I dati utente (`library\`, `presets\resins_user.json`, `dragonslide.ini`) non vengono toccati.
+I dati utente (`library\`, `presets\resins_user.json`, `dragonslicer.ini`) non vengono toccati.
 
 **Pubblicare una versione:** alza `__version__` in `core/version.py`, ricompila con `build_exe.ps1`, poi crea una Release con tag `vX.Y.Z` allegando `DragonSlicer.exe` (nome esatto).

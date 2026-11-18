@@ -250,7 +250,7 @@ class PrinterPanel(QWidget):
         start = self.auto_start.isChecked()
         if start and not self._confirm_start(p, name):
             return
-        tmp = Path(tempfile.gettempdir()) / f"dragonslide_{os.getpid()}.goo"
+        tmp = Path(tempfile.gettempdir()) / f"dragonslicer_{os.getpid()}.goo"
 
         def work(job):
             job.phase.emit("Taglio i layer e creo il file…")

@@ -1,6 +1,6 @@
 """MCP server (stdio) exposing the DragonSlicer pipeline to an agent: import -> arrange -> supports -> .goo -> printer.
 
-Register it with:  claude mcp add dragonslide -- python C:\\path\\to\\dragonslide_mcp.py
+Register it with:  claude mcp add dragonslicer -- python C:\\path\\to\\dragonslicer_mcp.py
 Printer-moving tools (start / pause / resume / stop / delete) refuse unless confirm=true.
 """
 import os
@@ -19,9 +19,9 @@ from core.agent_api import TOOLS, ProjectError  # noqa: E402
 INSTRUCTIONS = """Slicer for ELEGOO resin printers. Typical flow: new_project -> add_model -> set_object (size/rotation) ->
 arrange -> set_supports -> check_project -> send_project (export .goo + upload). Starting, pausing, stopping a print and
 deleting files on the printer need confirm=true: only pass it after the user has explicitly agreed for that action.
-Paths are absolute; `project` is a folder (default dragonslide_project)."""
+Paths are absolute; `project` is a folder (default dragonslicer_project)."""
 
-server = MCPServer("dragonslide", instructions=INSTRUCTIONS)
+server = MCPServer("dragonslicer", instructions=INSTRUCTIONS)
 
 
 def _safe(fn):

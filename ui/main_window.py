@@ -1586,10 +1586,10 @@ class MainWindow(QMainWindow):
 
     def export_settings_file(self):
         """Dump resin profiles + the values now in the Resina and Supporti tabs to a JSON file, to survive a rebuild."""
-        path, _ = QFileDialog.getSaveFileName(self, "Esporta impostazioni", "dragonslide_impostazioni.json", "JSON (*.json);;Testo (*.txt)")
+        path, _ = QFileDialog.getSaveFileName(self, "Esporta impostazioni", "dragonslicer_impostazioni.json", "JSON (*.json);;Testo (*.txt)")
         if not path:
             return
-        data = dict(format="dragonslide-settings", version=1, machine=self.machine.name,
+        data = dict(format="dragonslicer-settings", version=1, machine=self.machine.name,
                     resin_profiles=resins._user(),
                     current_print=self.resin_panel.settings().as_dict(),
                     supports=dict(preset=self.sup_preset.currentText(),
@@ -1607,7 +1607,7 @@ class MainWindow(QMainWindow):
             return
         try:
             data = json.loads(Path(path).read_text(encoding="utf-8"))
-            if data.get("format") != "dragonslide-settings":
+            if data.get("format") not in ("dragonslicer-settings", "dragonslide-settings"):
                 raise ValueError("non è un file di impostazioni DragonSlicer")
             n = resins.import_user_profiles(data.get("resin_profiles", {}))
         except (OSError, ValueError, AttributeError, resins.ResinError) as e:
@@ -1837,7 +1837,7 @@ class MainWindow(QMainWindow):
             return
         temp = not path
         if temp:
-            path = str(Path(tempfile.gettempdir()) / f"dragonslide_{os.getpid()}.goo")
+            path = str(Path(tempfile.gettempdir()) / f"dragonslicer_{os.getpid()}.goo")
         self._thread = ExportThread(path, mesh, self.machine, self._print_settings(), self._viewer_preview())
         self.progress.setVisible(True)
         self.progress.setValue(0)
