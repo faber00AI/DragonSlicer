@@ -11,7 +11,7 @@ from pathlib import Path
 from .version import GITHUB_REPO, __version__
 
 API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
-HEADERS = {"User-Agent": "DragonSlide-updater", "Accept": "application/vnd.github+json"}
+HEADERS = {"User-Agent": "DragonSlicer-updater", "Accept": "application/vnd.github+json"}
 
 
 def _vt(v):

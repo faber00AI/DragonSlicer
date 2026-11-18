@@ -134,7 +134,7 @@ def _lib(fn, *args, **kw):
 
 
 def list_library() -> dict:
-    """List the personal model library (OBJ files in the library folder of dragonSlide)."""
+    """List the personal model library (OBJ files in the library folder of DragonSlicer)."""
     return dict(folder=str(lib.DIR), models=lib.list_models())
 
 

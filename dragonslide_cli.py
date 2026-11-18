@@ -1,4 +1,4 @@
-"""Command line for the dragonSlide pipeline (every command prints one JSON document; progress goes to stderr).
+"""Command line for the DragonSlicer pipeline (every command prints one JSON document; progress goes to stderr).
 
     python dragonslide_cli.py new_project --project job1 --machine "Saturn 4 Ultra"
     python dragonslide_cli.py add_model C:\\models\\figure.stl --project job1

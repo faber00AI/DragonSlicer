@@ -116,7 +116,7 @@ class MoveUndo(NamedTuple):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("dragonSlide")
+        self.setWindowTitle("DragonSlicer")
         self.setAcceptDrops(True)
         self.resize(1500, 900)
         self._no_wheel = install_no_wheel()   # spin boxes / drop-downs never change with the wheel
@@ -290,7 +290,7 @@ class MainWindow(QMainWindow):
         h = self.menuBar().addMenu("Aiuto")
         h.addAction("Cerca aggiornamenti…", lambda: self.check_updates(True))
         h.addAction(f"Informazioni (v{__version__})", lambda: QMessageBox.information(
-            self, "DragonSlide", f"DragonSlide v{__version__}\nhttps://github.com/faber00AI/DragonSlide"))
+            self, "DragonSlicer", f"DragonSlicer v{__version__}\nhttps://github.com/faber00AI/DragonSlicer"))
         QTimer.singleShot(4000, lambda: self.check_updates(False))
 
     def check_updates(self, manual):
@@ -314,7 +314,7 @@ class MainWindow(QMainWindow):
             return
         nl = chr(10)
         exe = Path(sys.executable).name if updater.can_self_update() else None
-        url = info["assets"].get("dragonSlide.exe")
+        url = info["assets"].get("DragonSlicer.exe")
         auto = bool(exe and url)
         txt = f"È disponibile la versione {info['version']} (hai la {__version__})." + nl * 2 + info["notes"][:800]
         txt += nl * 2 + ("Scaricare e installare ora? L'app si riavvierà." if auto else "Aprire la pagina di download?")
@@ -332,9 +332,6 @@ class MainWindow(QMainWindow):
                 dlg.setValue(p)
                 QApplication.processEvents()
             files = {updater.download(url, prog): Path(sys.executable)}
-            cli = Path(sys.executable).with_name("dragonSlide-cli.exe")
-            if cli.exists() and "dragonSlide-cli.exe" in info["assets"]:
-                files[updater.download(info["assets"]["dragonSlide-cli.exe"])] = cli
             updater.apply_and_restart(files)
         except Exception as ex:
             dlg.close()
@@ -916,7 +913,7 @@ class MainWindow(QMainWindow):
         path = path or (None if ask else self.project_file)
         if not path:
             path, _ = QFileDialog.getSaveFileName(self, "Salva progetto", self.project_file or (self._default_stem() + ".dsl"),
-                                                  "Progetto dragonSlide (*.dsl)")
+                                                  "Progetto DragonSlicer (*.dsl)")
             if not path:
                 return False
         if not path.lower().endswith(DSL_EXT):
@@ -965,7 +962,7 @@ class MainWindow(QMainWindow):
 
     def open_project(self, path=None):
         if not path:
-            path, _ = QFileDialog.getOpenFileName(self, "Apri progetto", "", "Progetti (*.dsl *.3mf);;Progetto dragonSlide (*.dsl);;Progetto SatelLite (*.goo.3mf *.3mf)")
+            path, _ = QFileDialog.getOpenFileName(self, "Apri progetto", "", "Progetti (*.dsl *.3mf);;Progetto DragonSlicer (*.dsl);;Progetto SatelLite (*.goo.3mf *.3mf)")
             if not path:
                 return False
         if any(pl["scene"].objects for pl in self.plates) and QMessageBox.question(
@@ -1041,7 +1038,7 @@ class MainWindow(QMainWindow):
         self.viewer.view_fit()
         if satellite:                                     # saving must not offer to overwrite the SatelLite file
             self.project_file = None
-            self.setWindowTitle(f"dragonSlide — {Path(path).name}")
+            self.setWindowTitle(f"DragonSlicer — {Path(path).name}")
             self.statusBar().showMessage(f"Progetto SatelLite importato: {'; '.join(notes)}", 12000)
         else:
             self._set_project_file(path)
@@ -1051,7 +1048,7 @@ class MainWindow(QMainWindow):
 
     def _set_project_file(self, path):
         self.project_file = path
-        self.setWindowTitle(f"dragonSlide — {Path(path).name}")
+        self.setWindowTitle(f"DragonSlicer — {Path(path).name}")
 
     # ---------------- unsaved changes ----------------
     def _state_sig(self):
@@ -1611,7 +1608,7 @@ class MainWindow(QMainWindow):
         try:
             data = json.loads(Path(path).read_text(encoding="utf-8"))
             if data.get("format") != "dragonslide-settings":
-                raise ValueError("non è un file di impostazioni dragonSlide")
+                raise ValueError("non è un file di impostazioni DragonSlicer")
             n = resins.import_user_profiles(data.get("resin_profiles", {}))
         except (OSError, ValueError, AttributeError, resins.ResinError) as e:
             QMessageBox.critical(self, "Importazione fallita", str(e))

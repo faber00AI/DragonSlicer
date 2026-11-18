@@ -1,4 +1,4 @@
-"""MCP server (stdio) exposing the dragonSlide pipeline to an agent: import -> arrange -> supports -> .goo -> printer.
+"""MCP server (stdio) exposing the DragonSlicer pipeline to an agent: import -> arrange -> supports -> .goo -> printer.
 
 Register it with:  claude mcp add dragonslide -- python C:\\path\\to\\dragonslide_mcp.py
 Printer-moving tools (start / pause / resume / stop / delete) refuse unless confirm=true.

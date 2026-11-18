@@ -1,4 +1,4 @@
-# dragonSlide
+# DragonSlicer
 
 Slicer 3D per stampanti a resina (MSLA), ispirato al workflow di ELEGOO SatelLite.
 Python 3.11 + PySide6 + OpenGL.
@@ -81,7 +81,7 @@ transizione, tipo, densità e costo al kg. Velocità in mm/min.
 - **Piatti di stampa**: le schede sopra il viewer («+» per aggiungerne, tasto destro per rinominare / eliminare) sono piatti dello stesso progetto, ciascuno con i suoi oggetti, supporti e annulla; stampante, resina e parametri dei supporti sono comuni. *Modifica > Sposta selezione su piatto* (o tasto destro sulla scheda di destinazione) sposta gli oggetti selezionati restando nella stessa posizione (Annulla rimette tutto a posto su entrambi i piatti; i supporti dei due piatti vanno rigenerati). **GENERA GOO** e l'invio alla stampante lavorano sul piatto attivo, il cui nome compare sul pulsante. *Salva progetto* salva tutti i piatti nel `.dsl`: il piatto 1 resta nelle chiavi di sempre (CLI/MCP lo vedono come prima, `pack`/`unpack` conservano gli altri), gli altri stanno in `extra_plates` (formato versione 2, scritto solo se i piatti sono più di uno).
 - **Testo 3D**: in *Modella → Aggiungi oggetto* scegli la forma **Testo**: scrivi (anche più righe), scegli il font tra quelli installati, altezza delle lettere, **spessore** (estrusione), spaziatura, allineamento e, se vuoi, la **curvatura**: un raggio > 0 avvolge il testo su un cilindro con asse lungo Y (lettere all'esterno o all'interno di un anello). Il risultato è una mesh chiusa come le altre forme (si può unire/sottrarre con i booleani). Da CLI/MCP: `add_text` e `list_fonts`. Serve `fonttools`.
 - **Menu tasto destro** (nel 3D, senza trascinare, e sulla lista oggetti): su un oggetto offre Duplica, Rimuovi, Sposta su piatto, Posa/Appoggia sul piatto, Ripara mesh, Specchia, Disponi tutti, Esporta selezione, Nuovo piatto; nello spazio vuoto Importa, Seleziona tutto, Disponi tutti, Nuovo piatto. *Disponi tutti* usa lo stesso algoritmo del CLI (`arrange`) ed è annullabile. Il pulsante **Sposta ▾** accanto a Importa/Duplica/Rimuovi/Annulla fa lo spostamento tra piatti.
-- **Progetti SatelLite (`.goo.3mf`)**: *File > Apri progetto*, trascinamento sulla finestra o *Importa* li aprono come progetto (`core/satellite.py`): una parte = un oggetto, con la posizione sul piatto; stampante e profilo resina attivo (esposizioni, layer base, attese, PWM; sollevamento/ritrazione solo se ≠ 0). I supporti di SatelLite (blob `.bms`) non vengono letti: se il file ne aveva, si attivano quelli di dragonSlide (Tree_Medium) e vengono rigenerati. Il file non viene mai sovrascritto, *Salva* chiede un nuovo `.dsl`. Agente: `import_project` accetta anche il `.goo.3mf`. Il lettore usa solo la libreria standard (nessun `lxml`) e legge in streaming anche file da GB.
+- **Progetti SatelLite (`.goo.3mf`)**: *File > Apri progetto*, trascinamento sulla finestra o *Importa* li aprono come progetto (`core/satellite.py`): una parte = un oggetto, con la posizione sul piatto; stampante e profilo resina attivo (esposizioni, layer base, attese, PWM; sollevamento/ritrazione solo se ≠ 0). I supporti di SatelLite (blob `.bms`) non vengono letti: se il file ne aveva, si attivano quelli di DragonSlicer (Tree_Medium) e vengono rigenerati. Il file non viene mai sovrascritto, *Salva* chiede un nuovo `.dsl`. Agente: `import_project` accetta anche il `.goo.3mf`. Il lettore usa solo la libreria standard (nessun `lxml`) e legge in streaming anche file da GB.
 - **Movimenti nel file**: come SatelLite, di default il `.goo` porta 0 in sollevamento/ritrazione e vale il profilo della stampante. Spuntando
   «Scrivi sollevamento e ritrazione nel file» (o `embed_motion=true`) i valori vengono scritti. Esposizione, attese, PWM, densità e costo vanno sempre nel file.
 - Agente: `list_resins`, `apply_resin`, `save_resin`, `delete_resin`, e `set_print` con tutti i parametri.
@@ -125,15 +125,15 @@ su una cartella di progetto (`project.json` + `meshes/*.ply`). Un solo elenco di
 
 ## Versione portatile (.exe)
 `build_exe.ps1` (serve `pip install pyinstaller`) crea in `dist\`:
-- `dragonSlide.exe` — l'interfaccia grafica, un solo file (~330 MB, il primo avvio impiega qualche secondo a decomprimersi)
-- `dragonSlide-cli.exe` — `dragonSlide-cli.exe cli <strumento> ...` (stessi comandi di `dragonslide_cli.py`) e `dragonSlide-cli.exe mcp` (server MCP su stdio)
+- `DragonSlicer.exe` — l'interfaccia grafica, un solo file (~330 MB, il primo avvio impiega qualche secondo a decomprimersi)
+- `DragonSlicer.exe` (stesso file della GUI) — `DragonSlicer.exe cli <strumento> ...` (stessi comandi di `dragonslide_cli.py`) e `DragonSlicer.exe mcp` (server MCP su stdio)
 
 Macchine e preset sono dentro l'exe; i dati che cambiano stanno accanto all'exe: `library\` (copiata al primo avvio), `presets\resins_user.json`,
 `dragonslide.ini` (impostazioni, anche i supporti salvati) e la cartella di progetto predefinita `dragonslide_project`. Basta copiare la cartella per spostare tutto.
 
 ## Aggiornamenti automatici
-Il menu **Aiuto → Cerca aggiornamenti** (e un controllo all'avvio) legge l'ultima *Release* di GitHub (`faber00AI/DragonSlide`).
-Se la versione è più recente propone il download di `dragonSlide.exe` (e `dragonSlide-cli.exe` se presente accanto), chiude l'app, sostituisce l'exe e la riavvia.
+Il menu **Aiuto → Cerca aggiornamenti** (e un controllo all'avvio) legge l'ultima *Release* di GitHub (`faber00AI/DragonSlicer`).
+Se la versione è più recente propone il download di `DragonSlicer.exe`, chiude l'app, sostituisce l'exe e la riavvia.
 I dati utente (`library\`, `presets\resins_user.json`, `dragonslide.ini`) non vengono toccati.
 
-**Pubblicare una versione:** alza `__version__` in `core/version.py`, ricompila con `build_exe.ps1`, poi crea una Release con tag `vX.Y.Z` allegando `dragonSlide.exe` e `dragonSlide-cli.exe` (nomi esatti).
+**Pubblicare una versione:** alza `__version__` in `core/version.py`, ricompila con `build_exe.ps1`, poi crea una Release con tag `vX.Y.Z` allegando `DragonSlicer.exe` (nome esatto).

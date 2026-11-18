@@ -75,7 +75,7 @@ def _motion(ps: PrintSettings, bottom: bool, prefix="") -> dict:
 
 
 def export_goo(path, mesh, machine: Machine, ps: PrintSettings, preview=None, progress=None,
-               cancelled=lambda: False, software="dragonSlide"):
+               cancelled=lambda: False, software="DragonSlicer"):
     """Write an ELEGOO .goo (V3.0) job. Exposure, waits and LED power come from `ps`. Lift/retract are written only with
     ps.embed_motion; otherwise they stay 0 like SatelLite does and the printer's own machine profile drives motion."""
     from PIL import Image
