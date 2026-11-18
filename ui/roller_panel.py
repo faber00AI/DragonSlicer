@@ -67,10 +67,29 @@ class RollerPanel(QWidget):
                                "visibile a ogni giro del rullo")
         self.thr = _spin(0, 1, 0, 0.05, 2, "", "Soglia: 0 = rilievo morbido con tutte le sfumature; sopra 0 il rilievo diventa a "
                                                  "gradino (netto): ciò che supera la soglia è rilievo")
+        self.angle = QSpinBox()
+        self.angle.setRange(0, 359)
+        self.angle.setSuffix("°")
+        self.angle.setWrapping(True)
+        self.angle.setToolTip("Rotazione del disegno sul rullo. Per non lasciare una giunzione a ogni giro, gli angoli diversi da 0° e 90° "
+                              "vengono portati al valore più vicino che si chiude esattamente (vedi la riga sotto) e la scala del "
+                              "disegno può cambiare un poco")
+        self.angle_info = QLabel("")
+        self.angle_info.setStyleSheet("color:#888")
+        arow = QHBoxLayout()
+        arow.addWidget(self.angle, 1)
+        for label, step in (("+45°", 45), ("+90°", 90), ("0°", None)):
+            b = QPushButton(label)
+            b.setFixedWidth(46)
+            b.setToolTip("Azzera la rotazione" if step is None else f"Ruota il disegno di altri {step}°")
+            b.clicked.connect(lambda _=False, s=step: self.angle.setValue(0 if s is None else (self.angle.value() + s) % 360))
+            arow.addWidget(b)
         v.addWidget(self.invert)
         v.addWidget(self.mirror)
         f.addRow("Soglia", self.thr)
+        f.addRow("Rotazione", arow)
         v.addLayout(f)
+        v.addWidget(self.angle_info)
 
         row = QHBoxLayout()
         self.saved = QComboBox()
@@ -155,6 +174,8 @@ class RollerPanel(QWidget):
         for wd in (self.invert, self.mirror):
             wd.toggled.connect(self._preview)
         self.thr.valueChanged.connect(self._preview)
+        self.angle.valueChanged.connect(self._preview)
+        self.ru.valueChanged.connect(self._preview)
         self.saved.activated.connect(self._pick_saved)
         self.b_save_pat.clicked.connect(self.save_pattern)
         self.b_del_pat.clicked.connect(self.delete_pattern)
@@ -174,7 +195,18 @@ class RollerPanel(QWidget):
         return rl.prepare(self._raw, self.invert.isChecked(), self.thr.value(), self.mirror.isChecked())
 
     def _preview(self, *_):
-        t = np.tile(self._tile(), (2, 2))
+        tile = self._tile()
+        m, n, eff = rl.lattice(self.ru.value(), self.angle.value())
+        self.angle_info.setText("" if self.angle.value() == eff else f"Angolo effettivo sul rullo: {eff:.1f}°")
+        if self.angle.value() == 0:
+            t = np.tile(tile, (2, 2))
+        else:
+            from scipy import ndimage as ndi
+            s = 128
+            X, Z = np.meshgrid(np.arange(s) / s * 2, np.arange(s) / s * 2)
+            cu, cv = rl.pattern_coords(X, Z, self.ru.value(), self.angle.value())
+            th, tw = tile.shape
+            t = ndi.map_coordinates(tile, [(cv % 1.0) * th, (cu % 1.0) * tw], order=1, mode="wrap")
         img = (np.clip(t, 0, 1) * 255).astype(np.uint8)
         qi = QImage(img.data, img.shape[1], img.shape[0], img.shape[1], QImage.Format_Grayscale8).copy()
         self.preview.setPixmap(QPixmap.fromImage(qi).scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation))
@@ -210,7 +242,7 @@ class RollerPanel(QWidget):
         name = self.src.currentText()
         rec = dict(source=name if name in rl.BUILTIN else "image", invert=self.invert.isChecked(),
                    mirror=self.mirror.isChecked(), threshold=self.thr.value(), raised=self.mode.currentIndex() == 0,
-                   depth=self.depth.value(), repeats_u=self.ru.value(), repeats_v=self.rv.value())
+                   depth=self.depth.value(), repeats_u=self.ru.value(), repeats_v=self.rv.value(), angle=self.angle.value())
         if rec["source"] == "image":
             rec["image"] = rl.encode_image(self._raw)
         return rec
@@ -252,6 +284,7 @@ class RollerPanel(QWidget):
             self.depth.setValue(float(rec.get("depth", 1.2)))
             self.ru.setValue(int(rec.get("repeats_u", 9)))
             self.rv.setValue(int(rec.get("repeats_v", 7)))
+            self.angle.setValue(int(rec.get("angle", 0)) % 360)
         finally:
             self._loading = False
         self._preview()
@@ -270,7 +303,7 @@ class RollerPanel(QWidget):
     def _fields(self):
         return dict(mode=self.mode, depth=self.depth, ru=self.ru, rv=self.rv, margin=self.margin, detail=self.detail,
                     diam=self.diam, length=self.length, wall=self.wall, clear=self.clear, bore=self.bore, handles=self.handles,
-                    invert=self.invert, mirror=self.mirror, thr=self.thr)
+                    invert=self.invert, mirror=self.mirror, thr=self.thr, angle=self.angle)
 
     def save_settings(self):
         st = app_settings()
@@ -314,7 +347,8 @@ class RollerPanel(QWidget):
         return rl.RollerParams(diameter=self.diam.value(), length=self.length.value(), depth=self.depth.value(),
                                raised=self.mode.currentIndex() == 0, repeats_u=self.ru.value(), repeats_v=self.rv.value(),
                                wall=self.wall.value(), clearance=self.clear.value(), bore=self.bore.value(),
-                               margin=self.margin.value(), detail=DETAIL[self.detail.currentText()], handles=self.handles.isChecked())
+                               margin=self.margin.value(), detail=DETAIL[self.detail.currentText()], handles=self.handles.isChecked(),
+                               angle=float(self.angle.value()))
 
     def generate(self):
         w = self.win

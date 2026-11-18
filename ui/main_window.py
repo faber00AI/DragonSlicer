@@ -289,9 +289,20 @@ class MainWindow(QMainWindow):
         v.addAction(a)
         h = self.menuBar().addMenu("Aiuto")
         h.addAction("Cerca aggiornamenti…", lambda: self.check_updates(True))
+        h.addAction("Associa i file .dsl a DragonSlicer…", self.associate_dsl)
         h.addAction(f"Informazioni (v{__version__})", lambda: QMessageBox.information(
             self, "DragonSlicer", f"DragonSlicer v{__version__}\nhttps://github.com/faber00AI/DragonSlicer"))
         QTimer.singleShot(4000, lambda: self.check_updates(False))
+
+    def associate_dsl(self):
+        from core import fileassoc
+        try:
+            fileassoc.register()
+        except Exception as e:
+            return QMessageBox.warning(self, "Associazione file", f"Non sono riuscito a registrare i file .dsl: {e}")
+        QMessageBox.information(self, "Associazione file", "Fatto: i file .dsl ora hanno la loro icona e con un doppio click si aprono "
+                                "in DragonSlicer.\nSe l'icona non cambia subito, riavvia Esplora risorse o attendi qualche istante.\n"
+                                "Se sposti il programma in un'altra cartella, ripeti questa operazione.")
 
     def check_updates(self, manual):
         if getattr(self, "_upd_busy", False):

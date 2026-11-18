@@ -43,6 +43,7 @@ if len(sys.argv) > 1 and sys.argv[1] in ("cli", "mcp"):
     _run_console()
     sys.exit(0)
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QColor, QIcon, QPalette
 from PySide6.QtWidgets import QApplication
 
@@ -80,6 +81,9 @@ def main():
     w = MainWindow()
     w.setWindowIcon(icon)
     w.showMaximized()
+    files = [a for a in sys.argv[1:] if os.path.isfile(a) and a.lower().endswith((".dsl", ".3mf"))]
+    if files:                                  # double click on a project: open it once the window is up
+        QTimer.singleShot(300, lambda: w.open_project(os.path.abspath(files[0])))
     sys.exit(app.exec())
 
 

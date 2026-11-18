@@ -36,6 +36,7 @@ class RollerParams:
     handles: bool = True         # also make the core and two handles
     handle_d: float = 28.0
     handle_len: float = 55.0
+    angle: float = 0.0           # pattern rotation in degrees (snapped to the nearest angle that still closes around the roller)
 
 
 # ---------------------------------------------------------------- patterns
@@ -210,13 +211,38 @@ def prepare(tile, invert=False, threshold=0.0, mirror=False):
     return t
 
 
+def lattice(ru: int, angle: float):
+    """Integer vector (m, n) whose direction is closest to `angle` (degrees) and whose length is close to ru.
+    Rotating the pattern so that one turn around the roller advances it by exactly (m, n) cells keeps it seamless.
+    Returns (m, n, effective angle in degrees)."""
+    ru = max(int(ru), 1)
+    a = float(angle) % 360.0
+    if a == 0.0:
+        return ru, 0, 0.0
+    r = int(np.ceil(ru * 1.4)) + 1
+    m, n = np.meshgrid(np.arange(-r, r + 1), np.arange(-r, r + 1))
+    ln = np.hypot(m, n)
+    ok = (ln >= ru * 0.7) & (ln <= ru * 1.4)
+    ang = np.degrees(np.arctan2(n, m)) % 360.0
+    err = np.abs((ang - a + 180.0) % 360.0 - 180.0)
+    cost = np.where(ok, err + 20.0 * np.abs(ln - ru) / ru, np.inf)       # angle first, scale change as a mild penalty
+    i = np.unravel_index(np.argmin(cost), cost.shape)
+    return int(m[i]), int(n[i]), float(ang[i])
+
+
+def pattern_coords(x, z, ru: int, angle: float):
+    """(cu, cv) tile coordinates (in cells) for a point x cells around and z cells along the roller."""
+    m, n, _ = lattice(ru, angle)
+    return (m * x + n * z) / ru, (-n * x + m * z) / ru
+
+
 def relief_field(tile, p: RollerParams):
     """Height field (rows along z, columns around) in [0, 1] sampled at the mesh nodes, with the smooth end rims."""
     nu, nv = p.repeats_u * p.detail, p.repeats_v * p.detail
     th, tw = tile.shape
-    ys = (np.arange(nv + 1) % p.detail) / p.detail * th
-    xs = (np.arange(nu) % p.detail) / p.detail * tw
-    H = ndi.map_coordinates(tile, np.meshgrid(ys, xs, indexing="ij"), order=1, mode="wrap")
+    X, Z = np.meshgrid(np.arange(nu) / p.detail, np.arange(nv + 1) / p.detail)
+    cu, cv = pattern_coords(X, Z, p.repeats_u, p.angle)
+    H = ndi.map_coordinates(tile, [(cv % 1.0) * th, (cu % 1.0) * tw], order=1, mode="wrap")
     z = np.linspace(0, p.length, nv + 1)
     rim = ((z < p.margin) | (z > p.length - p.margin))
     H[rim, :] = 0.0
