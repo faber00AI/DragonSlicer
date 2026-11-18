@@ -1,0 +1,34 @@
+{
+  "name": "ELEGOO Saturn 4 Ultra",
+  "brand": "ELEGOO",
+  "bed_x": 218.88,
+  "bed_y": 122.88,
+  "bed_z": 220.0,
+  "res_x": 11520,
+  "res_y": 5120,
+  "mirror_x": 0,
+  "mirror_y": 1,
+  "pixel_um": [
+    19.0,
+    24.0
+  ],
+  "format": "goo",
+  "density": 1.15,
+  "platform_id": 20,
+  "defaults": {
+    "layer_height": 0.05000000074505806,
+    "bottom_layers": 5,
+    "exposure": 2.5,
+    "bottom_exposure": 35.0,
+    "light_off_delay": 0.0,
+    "lift_height": 0.0,
+    "lift_speed": 0.0,
+    "retract_speed": 0.0,
+    "bottom_lift_height": 0.0,
+    "bottom_lift_speed": 0.0,
+    "bottom_retract_speed": 0.0,
+    "transition_layers": 5,
+    "pwm": 255,
+    "bottom_pwm": 255
+  }
+}

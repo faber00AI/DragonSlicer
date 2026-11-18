@@ -1,0 +1,15 @@
+PySide6>=6.6
+numpy
+scipy
+trimesh
+manifold3d
+mapbox-earcut
+pillow
+fonttools
+PyOpenGL
+pymeshfix
+fast-simplification
+
+requests
+websockets
+mcp>=2

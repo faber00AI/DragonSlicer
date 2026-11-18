@@ -1,0 +1,20 @@
+﻿# build output
+dist/
+build/
+*.spec
+# python
+__pycache__/
+*.pyc
+.venv/
+# dati utente / locali
+dragonslide.ini
+dragonslide_impostazioni.json
+dragonslide_project/
+presets/resins_user.json
+*.dsl
+*.goo
+*.npy
+*.log
+
+# credenziali
+.env

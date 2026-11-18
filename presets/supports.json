@@ -1,0 +1,52 @@
+{
+ "Tree_Small": {
+  "critical_angle": 30,
+  "spacing": 2.0,
+  "tip_radius": 0.2,
+  "body_radius": 0.5,
+  "base_radius": 1.2,
+  "base_height": 0.8,
+  "tip_length": 0.8,
+  "lift_height": 4.0,
+  "raft_height": 0.8,
+  "raft_margin": 2.0,
+  "raft_hole": 2.0,
+  "raft_bar": 1.0
+ },
+ "Tree_Medium": {
+  "critical_angle": 30,
+  "spacing": 3.0,
+  "tip_radius": 0.2,
+  "body_radius": 0.6,
+  "base_radius": 1.1,
+  "base_height": 1.0,
+  "tip_length": 2.0,
+  "lift_height": 6.0,
+  "raft_height": 1.0,
+  "raft_margin": 2.0,
+  "raft_hole": 2.0,
+  "raft_bar": 1.0,
+  "tip_sink": 0.4,
+  "trunk_radius": 1.0,
+  "cross_radius": 0.4,
+  "cross_percent": 30
+ },
+ "Tree_Large": {
+  "critical_angle": 30,
+  "spacing": 3.0,
+  "tip_radius": 0.3,
+  "body_radius": 0.75,
+  "base_radius": 1.35,
+  "base_height": 1.0,
+  "tip_length": 3.0,
+  "lift_height": 8.0,
+  "raft_height": 1.2,
+  "raft_margin": 2.0,
+  "raft_hole": 2.0,
+  "raft_bar": 1.0,
+  "tip_sink": 0.6,
+  "trunk_radius": 1.25,
+  "cross_radius": 0.4,
+  "cross_percent": 30
+ }
+}
