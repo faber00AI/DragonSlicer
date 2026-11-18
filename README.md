@@ -30,7 +30,9 @@ Fatto con Python, PySide6 e OpenGL. Ispirato al flusso di lavoro di ELEGOO Satel
 |---|---|
 | ![Anteprima layer](docs/screenshots/layer.png) | ![Scheda Resina](docs/screenshots/resina.png) |
 
-Stampanti incluse: ELEGOO Mars 5 Ultra e Saturn 4 Ultra. Altri profili ELEGOO si importano con `tools/import_machines.py`.
+Stampanti incluse (19 ELEGOO): Mars 3, 3 Pro, 4, 4 DLP, 4 Max, 4 Ultra, 5, 5 Ultra; Saturn S, 2, 3, 3 Ultra, 4, 4 Ultra, 4 Ultra 16K, 8K; Jupiter, Jupiter SE, Jupiter 2. Area di stampa, risoluzione e profili resina vengono dai dati ufficiali di ELEGOO SatelLite. **Provato su stampante reale solo con Saturn 4 Ultra**; sulle altre i file `.goo` risultano validi, ma l'orientamento dell'immagine e i parametri resina non sono stati verificati: fai una prova con un pezzo piccolo.
+
+Il formato di uscita è il `.goo` di ELEGOO, quindi le stampanti di altre marche (Anycubic, Phrozen, Creality…) non sono supportate.
 
 ## Avvio da sorgente
 

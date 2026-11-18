@@ -1,0 +1,34 @@
+{
+  "name": "ELEGOO Jupiter 2",
+  "brand": "ELEGOO",
+  "bed_x": 302.4,
+  "bed_y": 161.98,
+  "bed_z": 300.0,
+  "res_x": 15120,
+  "res_y": 6230,
+  "mirror_x": 1,
+  "mirror_y": 0,
+  "pixel_um": [
+    20.0,
+    26.0
+  ],
+  "format": "goo",
+  "density": 1.15,
+  "platform_id": 164,
+  "defaults": {
+    "layer_height": 0.05000000074505806,
+    "bottom_layers": 4,
+    "exposure": 3.0,
+    "bottom_exposure": 45.0,
+    "light_off_delay": 1.0,
+    "lift_height": 4.5,
+    "lift_speed": 60.0,
+    "retract_speed": 280.0,
+    "bottom_lift_height": 4.5,
+    "bottom_lift_speed": 60.0,
+    "bottom_retract_speed": 280.0,
+    "transition_layers": 10,
+    "pwm": 255,
+    "bottom_pwm": 255
+  }
+}

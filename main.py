@@ -61,13 +61,24 @@ def dark(app):
 
 
 def main():
+    if os.name == "nt":                       # own taskbar identity, otherwise Windows may group it under a generic icon
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("DragonSlicer.App")
+        except Exception:
+            pass
     app = QApplication(sys.argv)
     dark(app)
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-    icon = os.path.join(base, "assets", "dragonslicer.png")
-    if os.path.exists(icon):
-        app.setWindowIcon(QIcon(icon))
+    icon = QIcon()
+    for name in ("dragonslicer.ico", "dragonslicer.png"):
+        path = os.path.join(base, "assets", name)
+        if os.path.exists(path):
+            icon = QIcon(path)
+            break
+    app.setWindowIcon(icon)
     w = MainWindow()
+    w.setWindowIcon(icon)
     w.showMaximized()
     sys.exit(app.exec())
 

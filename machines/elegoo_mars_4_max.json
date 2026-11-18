@@ -1,0 +1,34 @@
+{
+  "name": "ELEGOO Mars 4 Max",
+  "brand": "ELEGOO",
+  "bed_x": 195.84,
+  "bed_y": 122.4,
+  "bed_z": 150.0,
+  "res_x": 5760,
+  "res_y": 3600,
+  "mirror_x": 1,
+  "mirror_y": 0,
+  "pixel_um": [
+    34.0,
+    34.0
+  ],
+  "format": "goo",
+  "density": 1.15,
+  "platform_id": 9,
+  "defaults": {
+    "layer_height": 0.05000000074505806,
+    "bottom_layers": 2,
+    "exposure": 2.5,
+    "bottom_exposure": 35.0,
+    "light_off_delay": 0.0,
+    "lift_height": 3.0,
+    "lift_speed": 75.0,
+    "retract_speed": 230.0,
+    "bottom_lift_height": 3.0,
+    "bottom_lift_speed": 75.0,
+    "bottom_retract_speed": 230.0,
+    "transition_layers": 5,
+    "pwm": 255,
+    "bottom_pwm": 255
+  }
+}
