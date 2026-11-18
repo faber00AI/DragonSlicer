@@ -1,10 +1,57 @@
 # DragonSlicer
 
-Slicer 3D per stampanti a resina (MSLA), ispirato al workflow di ELEGOO SatelLite.
-Python 3.11 + PySide6 + OpenGL.
+Slicer gratuito e open source per stampanti a resina **ELEGOO** (MSLA): importi un modello, generi i supporti, e invii il file `.goo` alla stampante in rete.
+Fatto con Python, PySide6 e OpenGL. Ispirato al flusso di lavoro di ELEGOO SatelLite.
+
+![Supporti e raft nella vista 3D](docs/screenshots/supporti.png)
+
+## Scarica
+
+**[Ultima versione per Windows →](https://github.com/faber00AI/DragonSlicer/releases/latest)** (`DragonSlicer.exe`, un solo file, nessuna installazione).
+
+- Il primo avvio impiega qualche secondo a decomprimersi.
+- Windows può mostrare l'avviso **SmartScreen** («Windows ha protetto il PC»), perché il file non è firmato: *Ulteriori informazioni → Esegui comunque*.
+- Gli aggiornamenti arrivano da soli: **Aiuto → Cerca aggiornamenti** (e un controllo all'avvio) scarica la nuova versione e riavvia l'app.
+
+## Cosa fa
+
+- **Supporti automatici** a pilastro, generati per ogni oggetto, con raft forato che si stacca più facilmente dal piatto.
+- **Svuota** i modelli, con fori di drenaggio e di sfiato calcolati per ogni cavità.
+- **Modella**: primitive, booleani, taglio con piano (anche inclinato) con perni, ripara le mesh, testo 3D.
+- **Stampo**: stampo in silicone sagomato attorno al modello, in due metà, con foro di colata e sfiati. **Rullo**: rullo con rilievo da una texture (o da un'immagine) per imprimere motivi nell'argilla.
+- **Consigliere di orientamento**, più piatti, array di oggetti, annulla/ripeti.
+- **Profili resina**: ampia libreria di profili ELEGOO, più i tuoi per stampante.
+- **Anteprima layer** e stima del tempo di stampa.
+- **Invio diretto alla stampante** Wi-Fi (ricerca in rete, avvio della stampa).
+- Esporta `.goo` (nativo ELEGOO), 3MF e ZIP di PNG. Apre anche i progetti SatelLite (`.goo.3mf`).
+- **Automazione**: lo stesso exe ha una riga di comando (`DragonSlicer.exe cli ...`) e un server **MCP** (`DragonSlicer.exe mcp`) per farlo usare da un agente AI come Claude.
+
+| Anteprima layer | Profili resina |
+|---|---|
+| ![Anteprima layer](docs/screenshots/layer.png) | ![Scheda Resina](docs/screenshots/resina.png) |
+
+Stampanti incluse: ELEGOO Mars 5 Ultra e Saturn 4 Ultra. Altri profili ELEGOO si importano con `tools/import_machines.py`.
+
+## Avvio da sorgente
 
     pip install -r requirements.txt
     python main.py
+
+Richiede Python 3.11. Per compilare l'exe: `pip install pyinstaller` e poi `powershell -File build_exe.ps1`.
+
+## Avvertenze
+
+- Software fornito **così com'è, senza garanzie**. La stampa a resina comporta rischi (resina, solventi, UV): controlla sempre il risultato prima di stampare e usa i tuoi parametri collaudati.
+- Progetto indipendente: **non è affiliato né approvato da ELEGOO**. «ELEGOO» e «SatelLite» sono marchi dei rispettivi proprietari.
+- Mantenuto quando c'è tempo. Segnalazioni e proposte sono benvenute nelle *Issues*.
+
+## Licenza
+
+[MIT](LICENSE): puoi usare, copiare, modificare e ridistribuire il codice, anche in progetti tuoi, mantenendo l'avviso di copyright.
+
+---
+
+# Documentazione tecnica
 
 ## Struttura
 - `core/machine.py`   profili stampante (`machines/*.json`) e parametri di stampa (velocità in mm/min)
