@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .version import GITHUB_REPO, __version__
 
+CRLF, LF = chr(13) + chr(10), chr(10)
 API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 HEADERS = {"User-Agent": "DragonSlicer-updater", "Accept": "application/vnd.github+json"}
 
@@ -49,17 +50,26 @@ def download(url, progress=None):
 
 
 def apply_and_restart(new_files):
-    """new_files: {downloaded_path: target_path}. Spawns a batch that waits for this process to exit, swaps the files, relaunches the app."""
+    """new_files: {downloaded_path: target_path}. Spawns a batch that keeps retrying to move each file over its target until this
+    process (and the PyInstaller bootloader that locks the exe) has exited, then relaunches the app."""
     exe = Path(sys.executable)
-    lines = ["@echo off", "setlocal"]
-    lines.append(f'set PID={os.getpid()}')
-    lines.append(":wait")
-    lines.append('tasklist /FI "PID eq %PID%" 2>nul | find "%PID%" >nul && (timeout /t 1 /nobreak >nul & goto wait)')
-    for src, dst in new_files.items():
-        lines.append(f':try_{abs(hash(str(dst)))}')
-        lines.append(f'move /Y "{src}" "{dst}" >nul 2>&1 || (timeout /t 1 /nobreak >nul & goto try_{abs(hash(str(dst)))})')
-    lines.append(f'start "" "{exe}"')
-    lines.append('(goto) 2>nul & del "%~f0"')
+    lines = ["@echo off", "set /a n=0"]
+    for i, (src, dst) in enumerate(new_files.items()):
+        lines += [f":retry{i}",
+                  f'move /Y "{src}" "{dst}" >nul 2>&1 && goto done{i}',
+                  "set /a n+=1",
+                  f"if %n% GEQ 180 goto fail",
+                  "ping -n 2 127.0.0.1 >nul",
+                  f"goto retry{i}",
+                  f":done{i}", "set /a n=0"]
+    lines += ["set PYINSTALLER_RESET_ENVIRONMENT=1",
+              f'start "" "{exe}"',
+              ":fail",
+              '(goto) 2>nul & del "%~f0"']
     bat = Path(tempfile.mkdtemp(prefix="dsupdate_")) / "update.bat"
-    bat.write_text("\r\n".join(lines) + "\r\n", encoding="mbcs")
-    subprocess.Popen(["cmd", "/c", str(bat)], creationflags=0x08000000 | 0x00000008, close_fds=True)
+    with open(bat, "w", encoding="mbcs", newline=CRLF) as f:         # one CRLF, not CR CR LF
+        f.write(LF.join(lines) + LF)
+    env = {k: v for k, v in os.environ.items() if not k.startswith("_PYI") and k != "_MEIPASS2"}   # the new exe must unpack by itself
+    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    subprocess.Popen(["cmd", "/c", str(bat)], env=env, creationflags=0x08000000 | 0x00000200, close_fds=True,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
