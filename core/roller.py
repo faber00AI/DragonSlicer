@@ -94,8 +94,80 @@ def _checker(n):
     return .5 + .5 * np.tanh(20 * np.sin(2 * np.pi * u) * np.sin(2 * np.pi * v))
 
 
+def _fbm(n, power, seed):
+    """Seamless random field in [0, 1]: white noise filtered in the frequency domain (periodic by construction)."""
+    w = np.random.default_rng(seed).standard_normal((n, n))
+    f = np.hypot(np.fft.fftfreq(n)[:, None], np.fft.fftfreq(n)[None, :])
+    f[0, 0] = 1.0
+    F = np.fft.fft2(w) * f ** (-power)
+    F[0, 0] = 0.0
+    x = np.fft.ifft2(F).real
+    return (x - x.min()) / (x.max() - x.min())
+
+
+def _worley(u, v, cells, seed, jitter=0.85):
+    """Periodic Worley noise at points (u, v): distance to the nearest and second nearest feature point, id of the nearest."""
+    rng = np.random.default_rng(seed)
+    px = (np.arange(cells)[None, :] + 0.5 + (rng.random((cells, cells)) - 0.5) * jitter) / cells
+    py = (np.arange(cells)[:, None] + 0.5 + (rng.random((cells, cells)) - 0.5) * jitter) / cells
+    ci, cj = np.floor((u % 1.0) * cells).astype(int), np.floor((v % 1.0) * cells).astype(int)
+    f1 = np.full(u.shape, 9.0)
+    f2 = np.full(u.shape, 9.0)
+    ident = np.zeros(u.shape, int)
+    for dj in (-1, 0, 1):
+        for di in (-1, 0, 1):
+            gi, gj = ci + di, cj + dj
+            x = px[gj % cells, gi % cells] + (gi // cells)
+            y = py[gj % cells, gi % cells] + (gj // cells)
+            d = np.hypot(u % 1.0 - x, v % 1.0 - y)
+            closer = d < f1
+            f2 = np.where(closer, f1, np.minimum(f2, d))
+            ident = np.where(closer, (gj % cells) * cells + gi % cells, ident)
+            f1 = np.where(closer, d, f1)
+    return f1, f2, ident
+
+
+def _stones(n):
+    u, v = _grid(n)
+    f1, f2, ident = _worley(u, v, 5, 11)
+    level = 0.8 + 0.2 * np.random.default_rng(3).random(25)[ident]
+    dome = 0.8 + 0.2 * (1 - _smooth(f1, 0.02, 0.13))
+    grain = 0.94 + 0.06 * _fbm(n, 1.0, 5)
+    return _smooth(f2 - f1, 0.008, 0.05) * level * dome * grain
+
+
+def _lava(n):
+    u, v = _grid(n)
+    wu = u + 0.05 * (_fbm(n, 1.6, 21) - 0.5)
+    wv = v + 0.05 * (_fbm(n, 1.6, 22) - 0.5)
+    f1, f2, _ = _worley(wu, wv, 4, 7, 0.95)
+    crack = 1 - _smooth(f2 - f1, 0.0, 0.055)
+    rough = _fbm(n, 1.2, 23)
+    return (1 - crack) * (0.55 + 0.45 * rough) * (0.85 + 0.15 * _smooth(f1, 0.0, 0.2))
+
+
+def _grass(n):
+    rng = np.random.default_rng(31)
+    hgt = np.zeros((n, n), np.float32)
+    ys = np.arange(n)
+    xs = np.arange(n)[None, :]
+    for _ in range(190):                     # blades stand along v (the roller axis), tip at the end of the stroke
+        x0, y0 = rng.random() * n, rng.random() * n
+        length = n * rng.uniform(0.28, 0.6)
+        width = n * rng.uniform(0.012, 0.022)
+        lean = rng.uniform(-0.09, 0.09) * n
+        level = rng.uniform(0.55, 1.0)
+        t = np.clip(((ys - y0) % n) / length, 0, 1.5)
+        on = t <= 1.0
+        cx = x0 + lean * t ** 2
+        hw = width * np.clip(1 - t, 0, 1) ** 0.8 + 0.25
+        d = np.abs((xs - cx[:, None] + n / 2) % n - n / 2)
+        cov = np.clip(1.0 - (d - hw[:, None]) / 1.2, 0, 1) * on[:, None]
+        hgt = np.maximum(hgt, (cov * (level * (0.6 + 0.4 * (1 - t))[:, None])).astype(np.float32))
+    return hgt
+
 BUILTIN = {"Punti": _dots, "Rombi": _diamonds, "Righe": _stripes, "Onde": _waves, "Anelli": _rings,
-           "Mattoni": _bricks, "Scacchi": _checker}
+           "Mattoni": _bricks, "Scacchi": _checker, "Pietre": _stones, "Lava": _lava, "Erba": _grass}
 
 
 def builtin_tile(name, n=128):
