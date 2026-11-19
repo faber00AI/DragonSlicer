@@ -5,7 +5,8 @@ $common = @("--noconfirm", "--clean", "--onefile", "--distpath", "$R\dist", "--p
     "--collect-all", "trimesh", "--collect-submodules", "skimage", "--collect-binaries", "manifold3d",
     "--collect-all", "pymeshfix", "--collect-all", "fast_simplification",
     "--hidden-import", "scipy.spatial.transform._rotation_groups", "--hidden-import", "mapbox_earcut",
-    "--exclude-module", "matplotlib", "--exclude-module", "tkinter", "--exclude-module", "IPython", "--exclude-module", "pytest")
+    "--exclude-module", "matplotlib", "--exclude-module", "tkinter", "--exclude-module", "IPython", "--exclude-module", "pytest",
+    "--exclude-module", "torch", "--exclude-module", "torchvision", "--exclude-module", "onnxruntime", "--exclude-module", "cv2", "--exclude-module", "numba", "--exclude-module", "llvmlite")
 python -m PyInstaller @common --windowed --icon "$R\assets\dragonslicer.ico" --name DragonSlicer --workpath "$R\build\gui" --specpath "$R\build" `
     --hidden-import dragonslicer_cli --hidden-import dragonslicer_mcp --collect-all mcp "$R\main.py"
 Remove-Item -Recurse -Force "$R\build"
