@@ -129,6 +129,37 @@ def _fill_boundary_loops(m: trimesh.Trimesh, max_frac: float = 0.15) -> trimesh.
     return trimesh.Trimesh(np.vstack([verts, new_v]), np.vstack([f, new_f]), process=False)
 
 
+def _glue_near_vertices(m: trimesh.Trimesh, frac: float = 0.05) -> trimesh.Trimesh:
+    """Merge vertices closer than `frac` x the median edge length (SatelLite's "stitch close triangles": it glues
+    at 0.05 mm). Double-layered exports have two copies of the surface a few microns apart; welding them turns most of
+    the non-manifold edges and cracks into ordinary shared edges instead of deleting triangles."""
+    import scipy.sparse as sp
+    from scipy.sparse.csgraph import connected_components
+    from scipy.spatial import cKDTree
+    v = np.asarray(m.vertices, float)
+    f = np.asarray(m.faces, np.int64)
+    if len(f) == 0:
+        return m
+    edges = np.linalg.norm(v[f[:, 0]] - v[f[:, 1]], axis=1)
+    tol = float(np.median(edges[edges > 0])) * frac if (edges > 0).any() else 0.0
+    if tol <= 0:
+        return m
+    pairs = cKDTree(v).query_pairs(tol, output_type="ndarray")
+    if len(pairs) == 0:
+        return m
+    g = sp.coo_matrix((np.ones(len(pairs)), (pairs[:, 0], pairs[:, 1])), shape=(len(v), len(v)))
+    n, lab = connected_components(g, directed=False)
+    nv = np.zeros((n, 3))
+    np.add.at(nv, lab, v)
+    nv /= np.bincount(lab, minlength=n)[:, None]
+    f2 = lab[f]
+    f2 = f2[(f2[:, 0] != f2[:, 1]) & (f2[:, 1] != f2[:, 2]) & (f2[:, 2] != f2[:, 0])]
+    _, first = np.unique(np.sort(f2, axis=1), axis=0, return_index=True)
+    out = trimesh.Trimesh(nv, f2[np.sort(first)], process=False)
+    out.remove_unreferenced_vertices()
+    return out
+
+
 def _drop_nonmanifold(m: trimesh.Trimesh) -> trimesh.Trimesh:
     """Remove every face that touches an edge shared by 3+ faces (what usually breaks AI/sculpt exports)."""
     f = np.asarray(m.faces, np.int64)
@@ -195,6 +226,12 @@ def repair(mesh: trimesh.Trimesh) -> tuple[trimesh.Trimesh, dict]:
     m = _basic_clean(mesh)
     steps = ["pulizia"]
     after = diagnose(m)
+    if not after["watertight"]:
+        g = _glue_near_vertices(m)
+        if g is not m:
+            trimesh.repair.fix_winding(g)
+            m, after = g, diagnose(g)
+            steps.append("vertici vicini uniti")
     if after["nonmanifold_edges"]:
         m = _drop_nonmanifold(m)
         after = diagnose(m)
