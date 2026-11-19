@@ -65,7 +65,10 @@ def diagnose(m: trimesh.Trimesh) -> dict:
 
 def _basic_clean(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     m = mesh.copy()
-    m.merge_vertices(merge_tex=True, merge_norm=True)
+    # weld tolerance relative to the model size (trimesh's absolute 1e-8 fuses distinct vertices of files in metres)
+    diag = float(np.linalg.norm(m.extents)) if len(m.vertices) else 0.0
+    digits = int(np.clip(round(-np.log10(max(diag, 1e-12) * 2e-8)), 4, 12))
+    m.merge_vertices(merge_tex=True, merge_norm=True, digits_vertex=digits)
     m.update_faces(m.nondegenerate_faces())
     m.update_faces(m.unique_faces())
     m.remove_unreferenced_vertices()
@@ -86,24 +89,35 @@ def _fill_boundary_loops(m: trimesh.Trimesh, max_frac: float = 0.15) -> trimesh.
     bnd = he[~np.isin(key, rkey)]                       # directed edges with no opposite half-edge
     if len(bnd) == 0:
         return m
-    out = {}
+    nxt = {}
     for a, b in bnd.tolist():
-        out.setdefault(a, []).append(b)
-    if any(len(v) != 1 for v in out.values()):        # a vertex with two boundary exits: not a simple loop
-        return m
-    nxt = {a: v[0] for a, v in out.items()}
+        nxt.setdefault(a, []).append(b)
+    loops = []
+    while nxt:                                          # walk the boundary; a revisited vertex cuts a cycle out as a loop
+        start = next(iter(nxt))
+        loop, pos, cur = [start], {start: 0}, start
+        while cur in nxt:
+            outs = nxt[cur]
+            step = outs.pop()
+            if not outs:
+                del nxt[cur]
+            if step in pos:
+                i = pos[step]
+                cyc = loop[i:]
+                if len(cyc) >= 3:
+                    loops.append(cyc)
+                for u in cyc[1:]:
+                    del pos[u]
+                loop = loop[:i + 1]
+            else:
+                pos[step] = len(loop)
+                loop.append(step)
+            cur = step
     verts = np.asarray(m.vertices, float)
     limit = max_frac * float(np.linalg.norm(m.extents))
-    new_v, new_f, seen = [], [], set()
+    new_v, new_f = [], []
     nv = len(verts)
-    for s in nxt:
-        if s in seen:
-            continue
-        loop, a = [], s
-        while a not in seen and a in nxt:
-            seen.add(a); loop.append(a); a = nxt[a]
-        if a != s or len(loop) < 3:
-            continue
+    for loop in loops:
         pts = verts[loop]
         if float(np.ptp(pts, axis=0).max()) > limit:
             continue
@@ -113,6 +127,30 @@ def _fill_boundary_loops(m: trimesh.Trimesh, max_frac: float = 0.15) -> trimesh.
     if not new_f:
         return m
     return trimesh.Trimesh(np.vstack([verts, new_v]), np.vstack([f, new_f]), process=False)
+
+
+def _drop_nonmanifold(m: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Remove every face that touches an edge shared by 3+ faces (what usually breaks AI/sculpt exports)."""
+    f = np.asarray(m.faces, np.int64)
+    nv = len(m.vertices)
+    e = np.concatenate([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]])
+    k = np.minimum(e[:, 0], e[:, 1]) * nv + np.maximum(e[:, 0], e[:, 1])
+    _, inv, cnt = np.unique(k, return_inverse=True, return_counts=True)
+    bad = (cnt[inv] > 2).reshape(3, -1).any(axis=0)
+    if not bad.any():
+        return m
+    f = f[~bad]
+    import scipy.sparse as sp                           # debris left over by the removal: pieces < 1% of the biggest
+    from scipy.sparse.csgraph import connected_components
+    g = sp.coo_matrix((np.ones(f.size), (np.repeat(f[:, 0], 3), f.ravel())), shape=(nv, nv))
+    n, lab = connected_components(g, directed=False)
+    comp = lab[f[:, 0]]
+    size = np.bincount(comp, minlength=n)
+    f = f[size[comp] >= 0.01 * size.max()]
+    out = trimesh.Trimesh(m.vertices, f, process=False)
+    out.remove_unreferenced_vertices()
+    trimesh.repair.fix_winding(out)
+    return out
 
 
 def _meshfix(m: trimesh.Trimesh) -> trimesh.Trimesh | None:
@@ -144,12 +182,23 @@ def simplify(mesh: trimesh.Trimesh, target_faces: int = SIMPLIFY_TARGET) -> trim
     return trimesh.Trimesh(v, f, process=False)
 
 
+def _similar(a: trimesh.Trimesh, b: trimesh.Trimesh, tol: float = 0.25) -> bool:
+    """True when `b` still looks like `a` (bounding box); guards against repairs that keep only a fragment."""
+    ea, eb = np.asarray(a.extents, float), np.asarray(b.extents, float)
+    return bool(np.all(eb >= ea * (1 - tol)) and np.all(eb <= ea * (1 + tol)))
+
+
 def repair(mesh: trimesh.Trimesh) -> tuple[trimesh.Trimesh, dict]:
-    """Clean the mesh, close holes, fix winding; escalates to PyMeshFix when the simple pass is not enough."""
+    """Clean the mesh, drop non-manifold faces, close holes, fix winding; PyMeshFix only as a last resort
+    (and its result is discarded if it no longer resembles the original)."""
     before = diagnose(mesh)
     m = _basic_clean(mesh)
     steps = ["pulizia"]
     after = diagnose(m)
+    if after["nonmanifold_edges"]:
+        m = _drop_nonmanifold(m)
+        after = diagnose(m)
+        steps.append("spigoli non-manifold rimossi")
     if not after["watertight"] and after["open_edges"] and not after["nonmanifold_edges"]:
         local = _fill_boundary_loops(m)                 # fast local hole closing before the heavy global repair
         if local is not m:
@@ -160,11 +209,19 @@ def repair(mesh: trimesh.Trimesh) -> tuple[trimesh.Trimesh, dict]:
                 steps.append("chiusura buchi")
     if not after["watertight"]:
         fixed = _meshfix(m)
-        if fixed is not None:
+        if fixed is not None and _similar(m, fixed):
             d = diagnose(fixed)
             if d["watertight"] or d["open_edges"] + d["nonmanifold_edges"] < after["open_edges"] + after["nonmanifold_edges"]:
                 m, after = fixed, d
                 steps.append("PyMeshFix")
+    if not after["watertight"] and after["open_edges"] and not after["nonmanifold_edges"]:
+        big = _fill_boundary_loops(m, max_frac=10.0)    # last resort: cap the large openings too, so it can be sliced
+        if big is not m:
+            big.fix_normals()
+            d = diagnose(big)
+            if d["open_edges"] + d["nonmanifold_edges"] < after["open_edges"] + after["nonmanifold_edges"]:
+                m, after = big, d
+                steps.append("chiusura buchi grandi")
     return m, dict(before=before, after=after, steps=steps)
 
 

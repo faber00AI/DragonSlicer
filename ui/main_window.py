@@ -627,6 +627,7 @@ class MainWindow(QMainWindow):
         lay.addWidget(g)
         self.viewer.ray_clicked.connect(self._support_click)
         self.viewer.delete_pressed.connect(self._delete_key)
+        self.viewer.screenshot_requested.connect(self.save_screenshot)
         sc = QShortcut(QKeySequence(Qt.Key_Delete), self.obj_list)     # Canc with the object list focused
         sc.setContext(Qt.WidgetShortcut)
         sc.activated.connect(self.remove_selected)
@@ -1857,6 +1858,23 @@ class MainWindow(QMainWindow):
         self._thread.done.connect(lambda ok, err: self._export_done(
             ok, err, send=(wifi, path, name, start, temp) if send else None))
         self._thread.start()
+
+    def save_screenshot(self):
+        """Image of the 3D view (build plate and objects, without the tool buttons): saved as PNG and copied."""
+        self.views.setCurrentIndex(0)
+        img = self.viewer.grabFramebuffer()
+        start = (Path(self.project_file).parent if self.project_file else Path.home() / "Pictures") / (self._default_stem("piatto") + ".png")
+        path, _ = QFileDialog.getSaveFileName(self, "Salva screenshot del piatto", str(start), "Immagine PNG (*.png)")
+        QApplication.clipboard().setImage(img)
+        if not path:
+            self.statusBar().showMessage("Screenshot copiato negli appunti", 6000)
+            return
+        if not path.lower().endswith(".png"):
+            path += ".png"
+        if img.save(path, "PNG"):
+            self.statusBar().showMessage(f"Screenshot salvato (e copiato negli appunti): {path}", 8000)
+        else:
+            QMessageBox.critical(self, "Screenshot", f"Impossibile salvare {path}")
 
     def _viewer_preview(self):
         """Current 3D view as a PIL image (used for the .goo thumbnails)."""

@@ -92,6 +92,13 @@ def _mode_icon(kind, size=40):
         r = size * 0.36
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             arrow(c + dx * 3, c + dy * 3, c + dx * r, c + dy * r)
+    elif kind == "camera":                        # camera body, viewfinder bump and lens
+        p.setBrush(Qt.NoBrush)
+        p.drawRoundedRect(QRectF(6, 13, 28, 19), 3, 3)
+        p.setBrush(col)
+        p.drawPolygon(QPolygonF([QPointF(*q) for q in ((14, 13), (16.5, 8), (23.5, 8), (26, 13))]))
+        p.setBrush(Qt.NoBrush)
+        p.drawEllipse(QPointF(20, 22.5), 5.5, 5.5)
     else:                                         # square with a diagonal arrow
         p.setBrush(Qt.NoBrush)
         p.drawRect(QRectF(9, 17, 14, 14))
@@ -189,6 +196,7 @@ class Viewer(QOpenGLWidget):
     gizmo_delta = Signal(str, int, float)   # mode, axis, mm (move) / degrees (rotate) / factor (scale)
     gizmo_end = Signal()
     mode_changed = Signal(str)
+    screenshot_requested = Signal()
     box_selected = Signal(object, bool)     # middle-button rectangle: set of scene rows inside it, additive (Ctrl/Shift)
 
     def __init__(self, parent=None):
@@ -238,6 +246,18 @@ class Viewer(QOpenGLWidget):
             grp.addButton(b)
             b.clicked.connect(lambda _=False, m=mode: self.set_mode(m))
             self.mode_btns[mode] = b
+        shot = QToolButton(self)                      # not a mode: one click saves an image of the build plate
+        shot.setIcon(_mode_icon("camera"))
+        shot.setIconSize(QSize(34, 34))
+        shot.setFixedSize(44, 44)
+        shot.setFocusPolicy(Qt.NoFocus)
+        shot.setToolTip("Screenshot del piatto di stampa (salva PNG e copia negli appunti)")
+        shot.setStyleSheet("QToolButton{background:rgba(24,27,33,200);border:1px solid #3a3f47;border-radius:6px}"
+                           "QToolButton:hover{background:rgba(60,66,78,220)}"
+                           "QToolButton:pressed{background:#2563eb;border-color:#60a5fa}")
+        shot.move(10, 10 + 3 * 50 + 8)
+        shot.clicked.connect(self.screenshot_requested)
+        self.shot_btn = shot
         self.mode_btns[self.mode].setChecked(True)
         self.mode_changed.connect(lambda m: self.mode_btns[m].setChecked(True))
 
