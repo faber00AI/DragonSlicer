@@ -35,6 +35,7 @@ from .appsettings import app_settings
 from .printer_panel import PrinterPanel
 from .mold_panel import MoldPanel
 from .roller_panel import RollerPanel
+from .split_panel import SplitPanel
 from .resin_panel import ResinPanel
 from .scale_dialog import SMALL_MM, ScaleDialog
 from .viewer import Drawable, Geometry, Viewer
@@ -388,6 +389,7 @@ class MainWindow(QMainWindow):
             return sa, pl
 
         page_scene, lay = page()
+        scene_lay = lay                                  # tab Stampante: macchina, resina, collegamento stampante
 
         g = QGroupBox("Stampante")
         f = QFormLayout(g)
@@ -536,11 +538,13 @@ class MainWindow(QMainWindow):
         self.stack_center.setChecked(True)
         gl_.addWidget(self.stack_center, 5, 1, 1, 3)
         g_align = g
-        tabs.addTab(page_scene, "Scena")
+        tabs.addTab(page_scene, "Stampante")
         self.model_panel = ModelingPanel(self)
-        lay.addWidget(self.model_panel.g_add)            # Scena: Stampante, Aggiungi oggetto, Libreria personale
-        lay.addWidget(self.model_panel.g_lib)
-        lay.addStretch(1)
+        page_crea, clay = page()
+        clay.addWidget(self.model_panel.g_add)           # Crea: Aggiungi oggetto, Libreria personale
+        clay.addWidget(self.model_panel.g_lib)
+        clay.addStretch(1)
+        tabs.addTab(page_crea, "Crea")
         self.model_panel.layout().insertWidget(0, g_transform)   # Modella: Trasformazione, Allinea, then its own tools
         lp = self.model_panel.layout()
         lp.insertWidget(lp.indexOf(self.model_panel.g_bool) + 1, g_align)
@@ -562,6 +566,13 @@ class MainWindow(QMainWindow):
         rr.setFrameShape(QFrame.NoFrame)
         rr.setWidget(self.roller_panel)
         tabs.addTab(rr, "Rullo")
+        self.split_panel = SplitPanel(self)
+        sd = QScrollArea()
+        sd.setWidgetResizable(True)
+        sd.setFrameShape(QFrame.NoFrame)
+        sd.setWidget(self.split_panel)
+        self.split_page = sd
+        tabs.addTab(sd, "Dividi")
         tabs.currentChanged.connect(lambda _: self.model_panel._show_plane())
         page_sup, lay = page()
 
@@ -638,17 +649,10 @@ class MainWindow(QMainWindow):
         tabs.addTab(page_sup, "Supporti")
         self.resin_panel = ResinPanel(self.machine)
         self.resin_panel.changed.connect(self._print_settings_changed)
-        rs = QScrollArea()
-        rs.setWidgetResizable(True)
-        rs.setFrameShape(QFrame.NoFrame)
-        rs.setWidget(self.resin_panel)
-        tabs.addTab(rs, "Resina")
         self.printer_panel = PrinterPanel(self)
-        sp = QScrollArea()
-        sp.setWidgetResizable(True)
-        sp.setFrameShape(QFrame.NoFrame)
-        sp.setWidget(self.printer_panel)
-        tabs.addTab(sp, "Stampante")
+        scene_lay.addWidget(self.resin_panel)
+        scene_lay.addWidget(self.printer_panel)
+        scene_lay.addStretch(1)
         outer.addWidget(tabs, 1)
         return w
 
@@ -1490,7 +1494,15 @@ class MainWindow(QMainWindow):
         sel = {self.obj_list.row(i) for i in self.obj_list.selectedItems()} | {self.obj_list.currentRow()}
         sel.discard(-1)
         live = {}
+        sp = getattr(self, "split_panel", None)
         for k, o in enumerate(self.scene.objects):
+            pv = sp.preview_for(k, o) if sp is not None else None
+            if pv:                                                   # tab Dividi: le parti a colori al posto dell'oggetto
+                for m, col, off in pv:
+                    T = np.eye(4)
+                    T[:3, 3] = off
+                    items.append(Drawable(self._geometry(m, live), col, pick=k, matrix=T))
+                continue
             items.append(Drawable(self._geometry(o.mesh, live), SEL_COLOR if k in sel else MODEL_COLOR,
                                   pick=k, matrix=o.matrix()))
         has_sup = any(o.sup is not None for o in self.scene.objects)

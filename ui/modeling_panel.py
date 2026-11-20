@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QComboBox, QDoubleSpinBox, QFileDialog, QFormLayo
 
 from core import library as lib
 from core import modeling as md
-from core.cutkeys import add_pins
+from core import connectors
 from core import text as tx
 
 AXES = ("X", "Y", "Z")
@@ -125,39 +125,9 @@ class ModelingPanel(QWidget):
         f.addRow("Inclinazione", self.cut_tilt)
         f.addRow("Direzione", self.cut_dir)
         f.addRow("Parti", self.cut_keep)
-        self.cut_keys = QComboBox()
-        self.cut_keys.addItems(["Nessuno", "Perni e fori"])
-        self.cut_keys.setToolTip("Perni e fori di allineamento, alternati tra le due metà, per rincollare i pezzi precisi. "
-                                 "Servono pareti abbastanza spesse e solo con «Tieni entrambe»")
-        f.addRow("Incastri", self.cut_keys)
-        self.key_n = QSpinBox()
-        self.key_n.setRange(1, 12)
-        self.key_n.setValue(4)
-        self.key_n.setPrefix("N ")
-        self.key_n.setToolTip("Numero di perni (più fori)")
-        self.key_d = QDoubleSpinBox()
-        self.key_d.setRange(1.5, 20)
-        self.key_d.setValue(4.0)
-        self.key_d.setSingleStep(0.5)
-        self.key_d.setPrefix("Ø ")
-        self.key_d.setSuffix(" mm")
-        self.key_d.setToolTip("Diametro del perno (lunghezza = 1,5 volte, minimo 5 mm)")
-        self.key_c = QDoubleSpinBox()
-        self.key_c.setRange(0, 1)
-        self.key_c.setValue(0.2)
-        self.key_c.setSingleStep(0.05)
-        self.key_c.setDecimals(2)
-        self.key_c.setPrefix("gioco ")
-        self.key_c.setSuffix(" mm")
-        self.key_c.setToolTip("Gioco radiale tra perno e foro: aumentalo se i pezzi non si incastrano")
-        self.key_row = QWidget()
-        kr = QHBoxLayout(self.key_row)
-        kr.setContentsMargins(0, 0, 0, 0)
-        for wd in (self.key_n, self.key_d, self.key_c):
-            kr.addWidget(wd)
-        f.addRow(self.key_row)
-        self.cut_keys.currentIndexChanged.connect(lambda i: self.key_row.setVisible(i == 1))
-        self.key_row.setVisible(False)
+        info = QLabel("Perni e magneti: usa il gruppo «Connettori» più in basso (valgono anche per il taglio a pennello).")
+        info.setWordWrap(True)
+        f.addRow(info)
         f.addRow("Distanzia di", self.cut_gap)
         b = QPushButton("Taglia")
         b.setMinimumHeight(30)
@@ -168,7 +138,7 @@ class ModelingPanel(QWidget):
         self.cut_axis.currentIndexChanged.connect(self._axis_changed)
         for sp in (self.cut_pos, self.cut_tilt, self.cut_dir):
             sp.valueChanged.connect(self._show_plane)
-        lay.addWidget(g)
+        self.g_cut = g                        # il main window lo mette nella tab Dividi
 
         # ---- mesh tools ----
         g = QGroupBox("Mesh")
@@ -405,7 +375,7 @@ class ModelingPanel(QWidget):
         return c, n, float(np.linalg.norm(m.extents))
 
     def _show_plane(self, *_):
-        on = (self.win.side_tabs.currentWidget() is self.win.model_page
+        on = (self.win.side_tabs.currentWidget() is self.win.split_page
               and any(abs(sp.value()) > 1e-9 for sp in (self.cut_pos, self.cut_tilt, self.cut_dir)))   # all 0 = no cut set
         self.win.viewer.set_cut_plane(self.plane() if on else None)
 
@@ -565,19 +535,27 @@ class ModelingPanel(QWidget):
         keep = self.cut_keep.currentIndex()
         gap = self.cut_gap.value()
         key_msg = ""
-        if self.cut_keys.currentIndex() == 1:
+        extra = []
+        mode, cargs = self.win.split_panel._conn_args()
+        if mode:
             if keep != 0:
-                key_msg = " (incastri solo con «Tieni entrambe»)"
+                key_msg = " (connettori solo con «Tieni entrambe»)"
             else:
-                want = self.key_n.value()
                 try:
-                    pos, neg, got = self.win.run_busy("Aggiungo gli incastri…", lambda: add_pins(
-                        pos, neg, n, float(np.dot(n, point)), want, self.key_d.value(), self.key_c.value()))
+                    sec = o.world_mesh().section(plane_origin=point, plane_normal=n)
+                    loops = connectors.outer_loops([np.asarray(q)[:-1] if np.allclose(q[0], q[-1]) else np.asarray(q)
+                                                    for q in sec.discrete]) if sec is not None else []
+                    pieces = [dict(label=0, mesh=pos, watertight=True), dict(label=1, mesh=neg, watertight=True)]
+                    pieces, extra, rep = self.win.run_busy("Aggiungo i connettori…", lambda: connectors.add_connectors(
+                        pieces, {(0, 1): loops} if loops else {}, mode, *cargs))
+                    pos, neg = pieces[0]["mesh"], pieces[1]["mesh"]
                 except Exception as e:
-                    return self._fail("Incastri non riusciti", e)
-                key_msg = f" — {got} perni" if got == want else (
-                    f" — solo {got} perni su {want}: la sezione o lo spessore non lasciano spazio" if got else
-                    " — nessun incastro: sezione troppo piccola o pezzo troppo sottile")
+                    return self._fail("Connettori non riusciti", e)
+                key_msg = f" — {rep['made']} connettori"
+                if rep["skipped"]:
+                    key_msg += f", {rep['skipped']} saltati (zona piccola o sottile)"
+                if rep["failed"]:
+                    key_msg += f", {rep['failed']} pezzi senza connettori (superficie non valida: usa «Ripara»)"
         if keep == 0 and gap > 0:                       # move the halves apart along the plane normal
             pos.apply_translation(n * gap / 2)
             neg.apply_translation(-n * gap / 2)
@@ -591,6 +569,10 @@ class ModelingPanel(QWidget):
         for part, tag, wanted in ((pos, "(+)", keep in (0, 1)), (neg, "(−)", keep in (0, 2))):
             if wanted:
                 self.win.add_mesh_object(part, f"{name} {tag}", select=False)
+        for k, d in enumerate(extra):                   # spinotti separati: accanto agli altri pezzi
+            m = d.copy()
+            m.apply_translation([self._free_spot(m), 0, -m.bounds[0][2]])
+            self.win.add_mesh_object(m, f"{name} spinotto {k + 1}", select=False)
         self.win.reselect(len(self.win.scene.objects) - 1)
         self.win.statusBar().showMessage("Taglio eseguito" + key_msg, 8000)
 

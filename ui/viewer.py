@@ -189,6 +189,7 @@ class Drawable:
 
 class Viewer(QOpenGLWidget):
     context_menu = Signal(int, object)      # right click without dragging: scene row under the cursor (-1 = empty), global position
+    paint_ray = Signal(object, object, bool)     # in paint_mode: world ray under the cursor while the left button is down, erase (Ctrl)
     ray_clicked = Signal(object, object, bool)   # in pick_rays mode: world ray (origin, direction) of a click, additive
     delete_pressed = Signal()
     clicked = Signal(int, bool)             # scene row under the cursor (-1 = empty space), additive (Ctrl/Shift)
@@ -224,6 +225,9 @@ class Viewer(QOpenGLWidget):
         self._labels = []
         self._box = None                            # (start, current) widget positions of the rubber-band rectangle
         self._build_mode_bar()
+        self.paint_mode = False                     # left drag on the model paints; off the model (or Alt+drag) it orbits
+        self.paint_probe = None                     # callable(origin, direction) -> True if the ray hits the model being painted
+        self._painting = False
         self.pick_rays = False                      # clicks are reported as rays (support editing) instead of picking objects
 
     def _build_mode_bar(self):
@@ -689,6 +693,12 @@ class Viewer(QOpenGLWidget):
         if e.button() == Qt.MiddleButton:
             self._box = (e.position(), e.position())
             return
+        if e.button() == Qt.LeftButton and self.paint_mode and not (e.modifiers() & Qt.AltModifier):
+            ray = self._ray(e.position())
+            if self.paint_probe is None or self.paint_probe(*ray):
+                self._painting = True
+                self.paint_ray.emit(*ray, bool(e.modifiers() & Qt.ControlModifier))
+                return
         if e.button() == Qt.LeftButton and self.gizmo is not None and self.mode != "select":
             o, d = self._ray(e.position())
             hit = self._hit_handle(o, d)
@@ -703,6 +713,9 @@ class Viewer(QOpenGLWidget):
                 self.update()
 
     def mouseMoveEvent(self, e):
+        if self._painting:
+            self.paint_ray.emit(*self._ray(e.position()), bool(e.modifiers() & Qt.ControlModifier))
+            return
         g = self._drag
         if g is not None:
             val = self._drag_value(*self._ray(e.position()))
@@ -744,6 +757,10 @@ class Viewer(QOpenGLWidget):
         self.update()
 
     def mouseReleaseEvent(self, e):
+        if self._painting and e.button() == Qt.LeftButton:
+            self._painting = False
+            self._last = self._press = None
+            return
         if e.button() == Qt.MiddleButton and self._box is not None:
             a, b = self._box
             self._box = None
@@ -758,7 +775,7 @@ class Viewer(QOpenGLWidget):
             self.update()
         elif e.button() == Qt.LeftButton and self._press is not None and not self._moved and self.pick_rays:
             self.ray_clicked.emit(*self._ray(e.position()), bool(e.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)))
-        elif e.button() == Qt.LeftButton and self._press is not None and not self._moved:
+        elif e.button() == Qt.LeftButton and self._press is not None and not self._moved and not self.paint_mode:
             self.clicked.emit(self.pick(e.position()), bool(e.modifiers() & (Qt.ControlModifier | Qt.ShiftModifier)))
         elif e.button() == Qt.RightButton and self._press is not None and not self._moved:
             self.context_menu.emit(self.pick(e.position()), e.globalPosition().toPoint())

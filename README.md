@@ -17,8 +17,9 @@ Fatto con Python, PySide6 e OpenGL. Ispirato al flusso di lavoro di ELEGOO Satel
 
 - **Supporti automatici** a pilastro, generati per ogni oggetto, con raft forato che si stacca più facilmente dal piatto.
 - **Svuota** i modelli, con fori di drenaggio e di sfiato calcolati per ogni cavità.
-- **Modella**: primitive, booleani, taglio con piano (anche inclinato) con perni, ripara le mesh, testo 3D.
+- **Modella**: primitive, booleani, ripara le mesh, testo 3D.
 - **Stampo**: stampo in silicone sagomato attorno al modello, in due metà, con foro di colata e sfiati. **Rullo**: rullo con rilievo da una texture (o da un'immagine) per imprimere motivi nell'argilla.
+- **Dividi**: taglio con piano (anche inclinato) o a pennello (dipingi la fascia dove tagliare, anteprima dei pezzi), chiusura dei coperchi e connettori (perni, magneti, spinotti).
 - **Consigliere di orientamento**, più piatti, array di oggetti, annulla/ripeti.
 - **Profili resina**: ampia libreria di profili ELEGOO, più i tuoi per stampante.
 - **Anteprima layer** e stima del tempo di stampa.

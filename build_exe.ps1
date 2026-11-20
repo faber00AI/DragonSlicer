@@ -1,6 +1,8 @@
 # Portable build: dist\DragonSlicer.exe: GUI, plus `DragonSlicer.exe cli ...` and `DragonSlicer.exe mcp`. Needs: pip install pyinstaller
+param([string]$Out = "")
 $R = $PSScriptRoot
-$common = @("--noconfirm", "--clean", "--onefile", "--distpath", "$R\dist", "--paths", $R,
+if (-not $Out) { $Out = "$R\dist" }
+$common = @("--noconfirm", "--clean", "--onefile", "--distpath", $Out, "--paths", $R,
     "--add-data", "$R\machines;machines", "--add-data", "$R\presets;presets", "--add-data", "$R\library;library", "--add-data", "$R\assets;assets",
     "--collect-all", "trimesh", "--collect-submodules", "skimage", "--collect-binaries", "manifold3d",
     "--collect-all", "pymeshfix", "--collect-all", "fast_simplification",
